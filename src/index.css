@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg: #0f0f14;
+  --color-surface: #17171f;
+  --color-surface-hover: #1e1e29;
+  --color-border: #2a2a38;
+  --color-accent: #6366f1;
+  --color-accent-soft: #4f46e5;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: #e5e5ea;
+}
