@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { habits } from '../data/dummyData.js'
 import { getLoggedDates, getCurrentStreak, getLongestStreak } from '../lib/habitLog.js'
+import { getOuraHabitDates } from '../lib/stats.js'
+import { isConnected } from '../lib/ouraAuth.js'
+import { fetchOuraDays } from '../lib/ouraApi.js'
 import StreakGrid from '../components/StreakGrid.jsx'
+
+const GRID_WEEKS = 52
+const FULL_YEAR_DAYS = GRID_WEEKS * 7
 
 export default function Streaks() {
   const [activeHabit, setActiveHabit] = useState(habits[0].key)
@@ -9,12 +15,21 @@ export default function Streaks() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const habit = habits.find((h) => h.key === activeHabit)
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
 
-    getLoggedDates(activeHabit)
+    const load =
+      habit.source === 'oura'
+        ? isConnected()
+          ? fetchOuraDays(FULL_YEAR_DAYS).then(({ days }) => getOuraHabitDates(days, habit.key))
+          : Promise.resolve(new Set())
+        : getLoggedDates(habit.key)
+
+    load
       .then((dates) => {
         if (!cancelled) setDoneDates(dates)
       })
@@ -37,7 +52,15 @@ export default function Streaks() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold text-white">Streaks</h1>
-        <p className="text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Daten aus Supabase'}</p>
+        <p className="text-sm text-zinc-500">
+          {loading
+            ? 'Lade Daten…'
+            : habit.source === 'oura'
+              ? isConnected()
+                ? 'Automatisch aus Oura'
+                : 'Noch nicht mit Oura verbunden (siehe Home)'
+              : 'Live-Daten aus Supabase'}
+        </p>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -78,7 +101,7 @@ export default function Streaks() {
           </div>
         </div>
 
-        <StreakGrid doneDates={doneDates} weeks={52} />
+        <StreakGrid doneDates={doneDates} weeks={GRID_WEEKS} />
       </div>
     </div>
   )

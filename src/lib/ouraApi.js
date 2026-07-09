@@ -15,7 +15,3 @@ export async function fetchOuraDays(days = 7) {
 
   return res.json()
 }
-
-export function fetchOuraLast7Days() {
-  return fetchOuraDays(7)
-}

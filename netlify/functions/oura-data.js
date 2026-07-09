@@ -33,7 +33,7 @@ export default async (req) => {
   }
 
   const requestedDays = Number(new URL(req.url).searchParams.get('days')) || 7
-  const days = Math.min(Math.max(requestedDays, 1), 90)
+  const days = Math.min(Math.max(requestedDays, 1), 400)
 
   const today = new Date()
   const start = new Date(today)

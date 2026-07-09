@@ -2,14 +2,21 @@
 // die fertig geladene Daten entgegennehmen – Laden/Fehlerbehandlung passiert
 // in den Views.
 
-import { toIsoDate } from './habitLog.js'
+import { toIsoDate, getLoggedDates } from './habitLog.js'
 
 // Habits, die in die Disziplin-Berechnung einfließen. Erweitern, sobald ein
-// weiteres Habit eine echte Tracking-UI hat (aktuell nur Kreatin).
-export const TRACKED_HABIT_KEYS = ['creatine']
+// weiteres Habit eine echte Tracking-UI hat. Schlafenszeit bleibt bewusst
+// draußen – die steckt schon in Vitalität, sonst würde sie doppelt zählen.
+export const TRACKED_HABIT_KEYS = ['creatine', 'training', 'steps']
 
 export const VITALITAET_WEIGHTS = { readiness: 0.4, sleep: 0.3, steps: 0.3 }
 export const STEPS_TARGET = 10000 // Schritte/Tag, die als 100%-Marke zählen
+
+// Sleep Score statt Rohdauer/Bettzeit, weil wir den Wert für Vitalität
+// ohnehin schon von Oura holen (kein zusätzlicher API-Call/Endpoint nötig)
+// und der Score selbst schon Dauer, Effizienz und Regelmäßigkeit einrechnet.
+// 70 entspricht in Ouras eigener Einordnung der Grenze zu "Good".
+export const SLEEP_SCORE_THRESHOLD = 70
 
 export function calculateLevel(statValue) {
   const clamped = Math.max(0, Math.min(100, statValue))
@@ -53,6 +60,38 @@ export function buildVitalitaetTrend(ouraDays) {
     .map((day) => ({ date: day.day, value: dailyVitalitaetScore(day) }))
     .filter((point) => point.value != null)
     .map((point) => ({ ...point, value: Math.round(point.value) }))
+}
+
+// Leitet aus Oura-Tagesdaten ab, an welchen Tagen ein Oura-basiertes Habit
+// als "erfüllt" gilt (Schritte-Ziel bzw. Sleep-Score-Schwelle).
+export function getOuraHabitDates(ouraDays, habitKey) {
+  const dates = new Set()
+  for (const day of ouraDays ?? []) {
+    if (habitKey === 'steps' && day.steps != null && day.steps >= STEPS_TARGET) {
+      dates.add(day.day)
+    }
+    if (habitKey === 'sleep' && day.sleepScore != null && day.sleepScore >= SLEEP_SCORE_THRESHOLD) {
+      dates.add(day.day)
+    }
+  }
+  return dates
+}
+
+// Baut die { [habitKey]: Set<isoDate> }-Map für calculateDisziplin/
+// buildDisziplinTrend zusammen: manuelle Habits kommen aus habit_logs,
+// 'steps' wird aus schon geladenen Oura-Tagesdaten abgeleitet. Ist Oura
+// nicht verbunden (ouraDays == null), fällt 'steps' einfach raus, statt
+// als "nie erfüllt" reinzuzählen.
+export async function loadDisziplinHabitDates(ouraDays) {
+  const manualKeys = TRACKED_HABIT_KEYS.filter((key) => key !== 'steps')
+  const entries = await Promise.all(manualKeys.map((key) => getLoggedDates(key).then((dates) => [key, dates])))
+  const result = Object.fromEntries(entries)
+
+  if (ouraDays && TRACKED_HABIT_KEYS.includes('steps')) {
+    result.steps = getOuraHabitDates(ouraDays, 'steps')
+  }
+
+  return result
 }
 
 // habitDatesByKey: { [habitKey]: Set<isoDate> }

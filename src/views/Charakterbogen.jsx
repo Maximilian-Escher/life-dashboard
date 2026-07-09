@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { isConnected } from '../lib/ouraAuth.js'
 import { fetchOuraDays } from '../lib/ouraApi.js'
-import { getLoggedDates } from '../lib/habitLog.js'
 import { getPortfolioSnapshots, getPortfolioGoal } from '../lib/portfolio.js'
 import {
-  TRACKED_HABIT_KEYS,
   calculateVitalitaet,
   calculateDisziplin,
   calculateWealth,
   buildVitalitaetTrend,
   buildDisziplinTrend,
   buildWealthTrend,
+  loadDisziplinHabitDates,
 } from '../lib/stats.js'
 import StatDetailCard from '../components/StatDetailCard.jsx'
 
@@ -28,30 +27,25 @@ export default function Charakterbogen() {
     setLoading(true)
     setError(null)
 
-    const habitsPromise = Promise.all(
-      TRACKED_HABIT_KEYS.map((key) => getLoggedDates(key).then((dates) => [key, dates])),
-    ).then((entries) => {
-      if (!cancelled) setHabitDates(Object.fromEntries(entries))
-    })
+    async function load() {
+      // Muss vor loadDisziplinHabitDates abgeschlossen sein, da die
+      // 'steps'-Komponente der Disziplin-Berechnung aus denselben
+      // Oura-Tagesdaten abgeleitet wird.
+      const ouraDaysResult = isConnected() ? (await fetchOuraDays(trendDays)).days : null
+      if (cancelled) return
+      setOuraDays(ouraDaysResult)
 
-    const ouraPromise = isConnected()
-      ? fetchOuraDays(trendDays).then(({ days }) => {
-          if (!cancelled) setOuraDays(days)
-        })
-      : Promise.resolve().then(() => {
-          if (!cancelled) setOuraDays(null)
-        })
+      const [habitDatesResult, [snaps, g]] = await Promise.all([
+        loadDisziplinHabitDates(ouraDaysResult),
+        Promise.all([getPortfolioSnapshots(trendDays), getPortfolioGoal()]),
+      ])
+      if (cancelled) return
+      setHabitDates(habitDatesResult)
+      setSnapshots(snaps)
+      setGoal(g)
+    }
 
-    const portfolioPromise = Promise.all([getPortfolioSnapshots(trendDays), getPortfolioGoal()]).then(
-      ([snaps, g]) => {
-        if (!cancelled) {
-          setSnapshots(snaps)
-          setGoal(g)
-        }
-      },
-    )
-
-    Promise.all([habitsPromise, ouraPromise, portfolioPromise])
+    load()
       .catch((err) => {
         if (!cancelled) setError(err.message)
       })
@@ -116,7 +110,7 @@ export default function Charakterbogen() {
           label="Disziplin"
           value={disziplin}
           trend={disziplinTrend}
-          tooltipText="Anteil erfüllter Tage der letzten 30 Tage über alle getrackten Habits (aktuell: Kreatin)."
+          tooltipText="Anteil erfüllter Tage der letzten 30 Tage, gemittelt über Kreatin, Training (beide manuell) und Schritte-Ziel (automatisch aus Oura). Schlafenszeit zählt bewusst nicht mit, da Schlaf schon in Vitalität steckt."
         />
         <StatDetailCard
           label="Wealth"

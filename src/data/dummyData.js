@@ -12,37 +12,11 @@ export const dailyQuests = [
   { id: 'sleep', label: 'Schlafenszeit eingehalten', done: false },
 ]
 
+// source: 'manual' = per Toggle in habit_logs gepflegt, 'oura' = automatisch
+// aus den Oura-Tagesdaten abgeleitet (siehe getOuraHabitDates in stats.js).
 export const habits = [
-  { key: 'creatine', label: 'Kreatin' },
-  { key: 'training', label: 'Training' },
-  { key: 'sleep', label: 'Schlafenszeit' },
-]
-
-export const skillTree = [
-  {
-    branch: 'Business',
-    nodes: [
-      { id: 'meta-blueprint', label: 'Meta Blueprint Zertifizierung', status: 'done' },
-      { id: 'google-digital-garage', label: 'Google Digital Garage', status: 'in-progress' },
-      { id: 'meta-ads-associate', label: 'Meta Ads Associate Exam', status: 'locked' },
-      { id: 'first-client', label: 'Erster Referenzkunde', status: 'locked' },
-      { id: 'gewerbe', label: 'Gewerbeanmeldung', status: 'locked' },
-    ],
-  },
-  {
-    branch: 'Bildung',
-    nodes: [
-      { id: 'ausbildung', label: 'Ausbildungsabschluss', status: 'done' },
-      { id: 'bos', label: 'BOS Kulmbach', status: 'in-progress' },
-      { id: 'fachhochschulreife', label: 'Fachhochschulreife', status: 'locked' },
-      { id: 'studium', label: 'Studium (Campus M / CODE Berlin)', status: 'locked' },
-    ],
-  },
-  {
-    branch: 'Fitness',
-    nodes: [
-      { id: 'workouts-25', label: '25 geloggte Workouts', status: 'done' },
-      { id: 'workouts-100', label: '100 geloggte Workouts', status: 'in-progress' },
-    ],
-  },
+  { key: 'creatine', label: 'Kreatin', source: 'manual' },
+  { key: 'training', label: 'Training', source: 'manual' },
+  { key: 'steps', label: 'Schritte', source: 'oura' },
+  { key: 'sleep', label: 'Schlafenszeit', source: 'oura' },
 ]

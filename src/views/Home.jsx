@@ -1,13 +1,30 @@
 import { useEffect, useState } from 'react'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { recovery as dummyRecovery, dailyQuests } from '../data/dummyData.js'
+import { WIDGET_LABELS } from '../data/dashboardWidgets.js'
 import { connectOura, isConnected, clearTokens } from '../lib/ouraAuth.js'
-import { fetchOuraLast7Days } from '../lib/ouraApi.js'
+import { fetchOuraDays } from '../lib/ouraApi.js'
 import { getLoggedDates, toggleDay, todayIso, getCurrentStreak } from '../lib/habitLog.js'
 import { getPortfolioSnapshots, getPortfolioGoal } from '../lib/portfolio.js'
-import { calculateVitalitaet, calculateDisziplin, calculateWealth, calculateLevel } from '../lib/stats.js'
-import StreakGrid from '../components/StreakGrid.jsx'
+import { calculateVitalitaet, calculateDisziplin, calculateWealth, getOuraHabitDates } from '../lib/stats.js'
+import { getCompletedNodeIds } from '../lib/skillTreeProgress.js'
+import { getNodes as getSkillTreeNodes } from '../lib/skillTreeNodes.js'
+import { getInProgressNodeByBranch } from '../lib/skillTree.js'
+import { skillTreeBranches } from '../data/skillTree.js'
+import { getLayout, saveLayout } from '../lib/dashboardLayout.js'
+import SortableWidgetItem from '../components/dashboard/SortableWidgetItem.jsx'
+import RecoveryWidget from '../components/widgets/RecoveryWidget.jsx'
+import HabitToggleWidget from '../components/widgets/HabitToggleWidget.jsx'
+import OuraWidget from '../components/widgets/OuraWidget.jsx'
+import StatsWidget from '../components/widgets/StatsWidget.jsx'
+import StreakPreviewWidget from '../components/widgets/StreakPreviewWidget.jsx'
+import SkillTreeHintWidget from '../components/widgets/SkillTreeHintWidget.jsx'
+import WeatherWidget from '../components/widgets/WeatherWidget.jsx'
 
-const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' })
+// 30 Tage statt nur 7, weil Vitalität (letzte 7) und die Schritte-Komponente
+// von Disziplin (letzte 30) sich dieselben geladenen Oura-Tage teilen.
+const OURA_FETCH_DAYS = 30
 
 function recoveryFromScore(score) {
   if (score >= 85) return { status: 'buff', note: 'Sehr gute Erholung letzte Nacht.' }
@@ -24,7 +41,17 @@ export default function Home() {
   const [error, setError] = useState(null)
   const [creatineDates, setCreatineDates] = useState(new Set())
   const [creatineError, setCreatineError] = useState(null)
+  const [trainingDates, setTrainingDates] = useState(new Set())
+  const [trainingError, setTrainingError] = useState(null)
   const [portfolio, setPortfolio] = useState({ value: null, goal: null })
+  const [skillCompletedIds, setSkillCompletedIds] = useState(new Set())
+  const [skillNodes, setSkillNodes] = useState([])
+
+  const [layout, setLayout] = useState([])
+  const [layoutError, setLayoutError] = useState(null)
+  const [editing, setEditing] = useState(false)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   useEffect(() => {
     if (!connected) return
@@ -32,7 +59,7 @@ export default function Home() {
     setLoading(true)
     setError(null)
 
-    fetchOuraLast7Days()
+    fetchOuraDays(OURA_FETCH_DAYS)
       .then(({ days }) => {
         if (!cancelled) setOuraDays(days)
       })
@@ -64,12 +91,57 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false
+    getLoggedDates('training')
+      .then((dates) => {
+        if (!cancelled) setTrainingDates(dates)
+      })
+      .catch((err) => {
+        if (!cancelled) setTrainingError(err.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
     Promise.all([getPortfolioSnapshots(3650), getPortfolioGoal()])
       .then(([snapshots, goal]) => {
         if (!cancelled) setPortfolio({ value: snapshots[snapshots.length - 1]?.value ?? null, goal })
       })
       .catch(() => {
         // Wealth zeigt dann einfach "Noch keine Daten" – kein eigener Fehlerbanner nötig
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([getSkillTreeNodes(), getCompletedNodeIds()])
+      .then(([nodeList, ids]) => {
+        if (!cancelled) {
+          setSkillNodes(nodeList)
+          setSkillCompletedIds(ids)
+        }
+      })
+      .catch(() => {
+        // Hinweis-Box zeigt dann einfach nichts an – kein eigener Fehlerbanner nötig
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getLayout()
+      .then((items) => {
+        if (!cancelled) setLayout(items)
+      })
+      .catch((err) => {
+        if (!cancelled) setLayoutError(err.message)
       })
     return () => {
       cancelled = true
@@ -105,26 +177,98 @@ export default function Home() {
     }
   }
 
+  async function handleToggleTraining() {
+    setTrainingError(null)
+    try {
+      const dates = await toggleDay('training', todayIso())
+      setTrainingDates(dates)
+    } catch (err) {
+      setTrainingError(err.message)
+    }
+  }
+
+  function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setLayout((items) => {
+      const oldIndex = items.findIndex((i) => i.key === active.id)
+      const newIndex = items.findIndex((i) => i.key === over.id)
+      const next = arrayMove(items, oldIndex, newIndex)
+      saveLayout(next).catch((err) => setLayoutError(err.message))
+      return next
+    })
+  }
+
+  function toggleWidgetVisible(key) {
+    setLayout((items) => {
+      const next = items.map((i) => (i.key === key ? { ...i, visible: !i.visible } : i))
+      saveLayout(next).catch((err) => setLayoutError(err.message))
+      return next
+    })
+  }
+
   const creatineToday = creatineDates.has(todayIso())
   const creatineStreak = getCurrentStreak(creatineDates)
+  const trainingToday = trainingDates.has(todayIso())
+  const trainingStreak = getCurrentStreak(trainingDates)
 
-  // Disziplin nutzt hier direkt die schon geladenen Kreatin-Daten. Sobald
-  // TRACKED_HABIT_KEYS (stats.js) mehr als 'creatine' enthält, hier die
-  // zusätzlichen Habits ebenfalls laden und in dieses Objekt aufnehmen.
+  // Disziplin nutzt hier direkt die schon geladenen Kreatin-/Trainings-Daten
+  // plus die aus ouraDays abgeleiteten Schritte-Tage (kein Extra-Fetch
+  // nötig, das deckt sich mit TRACKED_HABIT_KEYS in stats.js).
+  const disziplinHabitDates = {
+    creatine: creatineDates,
+    training: trainingDates,
+    ...(ouraDays ? { steps: getOuraHabitDates(ouraDays, 'steps') } : {}),
+  }
+
   const statCards = [
-    { key: 'vitalitaet', label: 'Vitalität', value: ouraDays ? calculateVitalitaet(ouraDays) : null },
-    { key: 'disziplin', label: 'Disziplin', value: calculateDisziplin({ creatine: creatineDates }, 30) },
+    { key: 'vitalitaet', label: 'Vitalität', value: ouraDays ? calculateVitalitaet(ouraDays.slice(-7)) : null },
+    { key: 'disziplin', label: 'Disziplin', value: calculateDisziplin(disziplinHabitDates, 30) },
     { key: 'wealth', label: 'Wealth', value: calculateWealth(portfolio.value, portfolio.goal) },
   ]
+
+  const inProgressByBranch = getInProgressNodeByBranch(skillNodes, skillCompletedIds)
+  const inProgressBranches = skillTreeBranches.filter((b) => inProgressByBranch[b.key])
 
   const latestDay = ouraDays?.[ouraDays.length - 1]
   const recoveryScore = latestDay?.readinessScore
   const recoveryInfo = recoveryScore != null ? recoveryFromScore(recoveryScore) : null
   const recoveryBadge = recoveryInfo?.status ?? (dummyRecovery.status === 'buff' ? 'buff' : 'debuff')
   const recoveryBarValue = recoveryScore ?? dummyRecovery.score
-  const recoveryNote = loading
-    ? 'Lade Oura-Daten…'
-    : (recoveryInfo?.note ?? dummyRecovery.note)
+  const recoveryNote = loading ? 'Lade Oura-Daten…' : (recoveryInfo?.note ?? dummyRecovery.note)
+
+  const widgetContent = {
+    weather: <WeatherWidget />,
+    recovery: <RecoveryWidget badge={recoveryBadge} barValue={recoveryBarValue} note={recoveryNote} />,
+    creatine: (
+      <HabitToggleWidget
+        title="Kreatin"
+        doneLabel="Heute genommen"
+        notDoneLabel="Heute noch nicht genommen"
+        dates={creatineDates}
+        today={creatineToday}
+        streak={creatineStreak}
+        error={creatineError}
+        onToggle={handleToggleCreatine}
+      />
+    ),
+    training: (
+      <HabitToggleWidget
+        title="Training"
+        doneLabel="Heute gemacht"
+        notDoneLabel="Heute noch nicht gemacht"
+        dates={trainingDates}
+        today={trainingToday}
+        streak={trainingStreak}
+        error={trainingError}
+        onToggle={handleToggleTraining}
+      />
+    ),
+    oura: <OuraWidget connected={connected} ouraDays={ouraDays} />,
+    stats: <StatsWidget statCards={statCards} />,
+    streaks: <StreakPreviewWidget dates={creatineDates} />,
+    skilltree: <SkillTreeHintWidget branches={inProgressBranches} inProgressByBranch={inProgressByBranch} />,
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,22 +279,32 @@ export default function Home() {
             {connected ? 'Live-Daten von Oura' : 'Platzhalter-Daten – noch keine Live-Integration'}
           </p>
         </div>
-        {connected ? (
+        <div className="flex shrink-0 items-center gap-2">
+          {connected ? (
+            <button onClick={handleDisconnect} className="text-xs text-zinc-500 hover:text-zinc-300">
+              Oura trennen
+            </button>
+          ) : (
+            <button
+              onClick={handleConnect}
+              disabled={connecting}
+              className="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
+            >
+              {connecting ? 'Verbinde…' : 'Mit Oura verbinden'}
+            </button>
+          )}
           <button
-            onClick={handleDisconnect}
-            className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300"
+            type="button"
+            onClick={() => setEditing((e) => !e)}
+            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+              editing
+                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-white'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-zinc-300 hover:text-white'
+            }`}
           >
-            Oura trennen
+            {editing ? 'Fertig' : 'Dashboard anpassen'}
           </button>
-        ) : (
-          <button
-            onClick={handleConnect}
-            disabled={connecting}
-            className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
-          >
-            {connecting ? 'Verbinde…' : 'Mit Oura verbinden'}
-          </button>
-        )}
+        </div>
       </header>
 
       {error && (
@@ -158,124 +312,35 @@ export default function Home() {
           {error}
         </p>
       )}
-
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-300">Recovery</h2>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              recoveryBadge === 'buff'
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : recoveryBadge === 'neutral'
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : 'bg-rose-500/15 text-rose-400'
-            }`}
-          >
-            {recoveryBadge === 'buff' ? 'Buff' : recoveryBadge === 'neutral' ? 'Neutral' : 'Debuff'}
-          </span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]">
-          <div
-            className="h-full rounded-full bg-[var(--color-accent)]"
-            style={{ width: `${recoveryBarValue}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-zinc-500">{recoveryNote}</p>
-      </section>
-
-      {connected && ouraDays && ouraDays.length > 0 && (
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-          <h2 className="mb-3 text-sm font-medium text-zinc-300">Letzte 7 Tage (Oura)</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-zinc-500">
-                  <th className="pb-2 font-normal">Tag</th>
-                  <th className="pb-2 font-normal">Schlaf</th>
-                  <th className="pb-2 font-normal">Readiness</th>
-                  <th className="pb-2 font-normal">Schritte</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ouraDays.map((d) => (
-                  <tr key={d.day} className="border-t border-[var(--color-border)]">
-                    <td className="py-2 text-zinc-400">{weekdayFormatter.format(new Date(d.day))}</td>
-                    <td className="py-2 text-zinc-200">{d.sleepScore ?? '–'}</td>
-                    <td className="py-2 text-zinc-200">{d.readinessScore ?? '–'}</td>
-                    <td className="py-2 text-zinc-200">
-                      {d.steps != null ? d.steps.toLocaleString('de-DE') : '–'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      {layoutError && (
+        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {layoutError}
+        </p>
+      )}
+      {editing && (
+        <p className="text-xs text-zinc-500">
+          Ziehe die Widgets per Punkte-Icon in eine neue Reihenfolge oder blende sie über die Checkbox aus.
+        </p>
       )}
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-300">Kreatin</h2>
-          <span className="text-xs text-zinc-500">
-            {creatineStreak > 0 ? `${creatineStreak} ${creatineStreak === 1 ? 'Tag' : 'Tage'} Streak` : 'Noch keine Streak'}
-          </span>
-        </div>
-        <button
-          onClick={handleToggleCreatine}
-          className="flex w-full items-center gap-3 rounded-lg border border-[var(--color-border)] px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--color-surface-hover)]"
-        >
-          <span
-            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-              creatineToday
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]'
-                : 'border-[var(--color-border)]'
-            }`}
-          >
-            {creatineToday && (
-              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 text-white">
-                <path
-                  d="M5 13l4 4L19 7"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </span>
-          <span className={creatineToday ? 'text-zinc-200' : 'text-zinc-400'}>
-            {creatineToday ? 'Heute genommen' : 'Heute noch nicht genommen'}
-          </span>
-        </button>
-        {creatineError && <p className="mt-2 text-xs text-rose-400">{creatineError}</p>}
-        <div className="mt-4">
-          <StreakGrid doneDates={creatineDates} weeks={12} />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-sm font-medium text-zinc-300">Stats</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {statCards.map((s) => (
-            <div
-              key={s.key}
-              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
-            >
-              <p className="text-xs text-zinc-500">{s.label}</p>
-              {s.value == null ? (
-                <p className="mt-1 text-sm text-zinc-500">Noch keine Daten</p>
-              ) : (
-                <>
-                  <p className="mt-1 text-xl font-semibold text-white">
-                    {s.value} <span className="text-xs font-normal text-zinc-500">/ 100</span>
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500">Level {calculateLevel(s.value).level}</p>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={layout.map((item) => item.key)} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-col gap-4">
+            {layout.map((item) => (
+              <SortableWidgetItem
+                key={item.key}
+                id={item.key}
+                label={WIDGET_LABELS[item.key]}
+                visible={item.visible}
+                editing={editing}
+                onToggleVisible={() => toggleWidgetVisible(item.key)}
+              >
+                {widgetContent[item.key]}
+              </SortableWidgetItem>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <h2 className="mb-3 text-sm font-medium text-zinc-300">Daily Quests</h2>
@@ -284,9 +349,7 @@ export default function Home() {
             <li key={q.id} className="flex items-center gap-3 text-sm">
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded border ${
-                  q.done
-                    ? 'border-[var(--color-accent)] bg-[var(--color-accent)]'
-                    : 'border-[var(--color-border)]'
+                  q.done ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-[var(--color-border)]'
                 }`}
               >
                 {q.done && (
@@ -301,9 +364,7 @@ export default function Home() {
                   </svg>
                 )}
               </span>
-              <span className={q.done ? 'text-zinc-500 line-through' : 'text-zinc-200'}>
-                {q.label}
-              </span>
+              <span className={q.done ? 'text-zinc-500 line-through' : 'text-zinc-200'}>{q.label}</span>
             </li>
           ))}
         </ul>
