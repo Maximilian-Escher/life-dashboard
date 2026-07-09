@@ -1,26 +1,24 @@
 import { useState } from 'react'
 import { habits } from '../data/dummyData.js'
-
-const WEEKS = 52
-const DAYS = 7
-
-function seedRandom(seed) {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
-}
+import { getLoggedDates, getCurrentStreak, getLongestStreak } from '../lib/habitLog.js'
+import StreakGrid from '../components/StreakGrid.jsx'
 
 export default function Streaks() {
   const [activeHabit, setActiveHabit] = useState(habits[0].key)
 
-  const cells = Array.from({ length: WEEKS * DAYS }, (_, i) =>
-    seedRandom(i + activeHabit.length) > 0.4,
-  )
+  const doneDates = getLoggedDates(activeHabit)
+  const currentStreak = getCurrentStreak(doneDates)
+  const longestStreak = getLongestStreak(doneDates)
 
   return (
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold text-white">Streaks</h1>
-        <p className="text-sm text-zinc-500">Platzhalter-Daten – noch keine Live-Integration</p>
+        <p className="text-sm text-zinc-500">
+          {activeHabit === 'creatine'
+            ? 'Lokal gespeicherte Daten'
+            : 'Noch kein Tracking für dieses Habit – Grid ist leer.'}
+        </p>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -43,26 +41,19 @@ export default function Streaks() {
         <div className="mb-4 flex gap-6 text-sm">
           <div>
             <p className="text-xs text-zinc-500">Aktuelle Streak</p>
-            <p className="font-semibold text-white">6 Tage</p>
+            <p className="font-semibold text-white">
+              {currentStreak} {currentStreak === 1 ? 'Tag' : 'Tage'}
+            </p>
           </div>
           <div>
             <p className="text-xs text-zinc-500">Längste Streak</p>
-            <p className="font-semibold text-white">21 Tage</p>
+            <p className="font-semibold text-white">
+              {longestStreak} {longestStreak === 1 ? 'Tag' : 'Tage'}
+            </p>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ width: WEEKS * 14 }}>
-            {cells.map((filled, i) => (
-              <div
-                key={i}
-                className={`h-3 w-3 rounded-sm ${
-                  filled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+        <StreakGrid doneDates={doneDates} weeks={52} />
       </div>
     </div>
   )

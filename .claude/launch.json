@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "dashboard-netlify-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:netlify"],
+      "port": 8888
     }
   ]
 }

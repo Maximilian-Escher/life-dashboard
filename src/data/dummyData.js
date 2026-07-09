@@ -1,5 +1,5 @@
 // Platzhalter-Daten fürs Grundgerüst. Struktur bleibt gleich, wenn später
-// echte Daten von Oura/Strava/Supabase reinkommen.
+// echte Daten von Oura/Supabase reinkommen.
 
 export const stats = [
   { key: 'vitalitaet', label: 'Vitalität', value: 68, level: 7, xp: 340, xpToNext: 500 },
@@ -14,7 +14,6 @@ export const recovery = {
 }
 
 export const dailyQuests = [
-  { id: 'creatine', label: 'Kreatin genommen', done: true },
   { id: 'steps', label: '8.000 Schritte', done: false },
   { id: 'sleep', label: 'Schlafenszeit eingehalten', done: false },
 ]

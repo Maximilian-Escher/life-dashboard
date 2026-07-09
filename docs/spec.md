@@ -21,12 +21,9 @@ Zielgruppe: nur ich selbst (Single-User, kein Multi-Account nötig).
 ### Oura Ring 4 (API)
 - Schlafdaten (Sleep Score, Schlafphasen, Schlafdauer)
 - Readiness Score (für Recovery-Bar)
-- Schritte pro Tag
+- Schritte pro Tag, Aktivitätslevel
 - Anbindung über offizielle Oura API (OAuth2), tägliches Sync
-
-### Strava (API, kostenlos für persönliche Nutzung)
-- Trainingseinheiten (Typ, Dauer, Distanz, Belastung)
-- Ersetzt Hevy als primäre Trainingsdatenquelle (da Hevy-API Pro-Abo voraussetzt)
+- Einzige Quelle für Bewegungsdaten (kein Strava/Hevy – deren APIs erfordern mittlerweile ein kostenpflichtiges Abo)
 
 ### Manuelle Eingaben
 - Kreatin-Checkbox (täglich, ad-hoc abhakbar)
@@ -43,7 +40,7 @@ Drei Kern-Stats, jeweils 0–100 normiert, mit transparenter Berechnungsformel (
 
 | Stat | Datenquelle | Berechnung |
 |---|---|---|
-| **Vitalität** | Oura (Readiness, Schlaf, Schritte) + Strava (Trainingsvolumen) | gewichteter gleitender Durchschnitt der letzten 7 Tage |
+| **Vitalität** | Oura (Readiness, Schlaf, Schritte, Aktivitätslevel) | gewichteter gleitender Durchschnitt der letzten 7 Tage |
 | **Disziplin** | Streak-Erfüllung aller Habits (Kreatin, Trainingsplan-Einhaltung) | % erfüllte Tage der letzten 30 Tage |
 | **Wealth** | Portfolio-Wert-Fortschritt Richtung Zielsumme | % Fortschritt zum Ziel + kurzfristiger Performance-Trend |
 

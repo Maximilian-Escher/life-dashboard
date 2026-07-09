@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 5173
+  port = 8888
+
+# Muss exakt der Redirect-URI entsprechen, die in der Oura-Entwickler-App hinterlegt ist.
+[[redirects]]
+  from = "/api/auth/oura/callback"
+  to = "/.netlify/functions/oura-callback"
+  status = 200
+  force = true

@@ -6,7 +6,7 @@ Gamifiziertes Life-OS als PWA. Reale Daten (Schlaf, Training, Finanzen) werden z
 ## Tech-Stack
 - Frontend: React (Vite) + Tailwind CSS
 - Charts: Recharts oder Chart.js
-- Backend/Secrets: Netlify Functions (OAuth-Token-Austausch für Oura/Strava)
+- Backend/Secrets: Netlify Functions (OAuth-Token-Austausch für Oura)
 - Datenbank/Auth: Supabase
 - Hosting: Netlify
 - PWA-fähig, mobile-first, Dark Mode als Standard
@@ -19,10 +19,9 @@ Gamifiziertes Life-OS als PWA. Reale Daten (Schlaf, Training, Finanzen) werden z
 - Minimal-invasive Änderungen: keine Refactorings an Code, der nicht Teil der aktuellen Aufgabe ist
 
 ## Aktueller Stand
-- [ ] Grundgerüst (leere Views, Navigation, Styling)
-- [ ] Oura-Integration
-- [ ] Strava-Integration
-- [ ] Streak-Grid + Kreatin-Checkbox
+- [x] Grundgerüst (leere Views, Navigation, Styling)
+- [x] Oura-Integration
+- [x] Streak-Grid + Kreatin-Checkbox
 - [ ] Stats/XP-Berechnung
 - [ ] Skill-Tree
 - [ ] Supabase-Anbindung
