@@ -14,3 +14,30 @@
   to = "/.netlify/functions/oura-callback"
   status = 200
   force = true
+
+# SPA-Fallback: React Router übernimmt das Routing im Browser, Netlifys
+# statischer Server kennt Routen wie /streaks aber nicht als echte Dateien.
+# Ohne das gibt es einen 404 bei Direktaufruf/Reload auf jeder Route außer "/".
+#
+# Bewusst pro Route statt "/* -> /index.html": Ein Wildcard fängt in
+# `netlify dev` auch die von Vite proxy-servierten Modul-/Asset-Requests
+# (/src/*, /@vite/*, /node_modules/*) ab und liefert dafür index.html statt
+# JavaScript zurück – die App bleibt dann komplett weiß, ohne Fehler im
+# Log (main.jsx wird als HTML statt als Modul geladen). Die feste Routen-
+# Liste trifft nur echte App-Seiten und lässt alles andere unangetastet.
+[[redirects]]
+  from = "/charakterbogen"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/streaks"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/skill-tree"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/finanzen"
+  to = "/index.html"
+  status = 200

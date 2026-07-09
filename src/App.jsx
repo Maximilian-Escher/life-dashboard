@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Home from './views/Home.jsx'
 import Charakterbogen from './views/Charakterbogen.jsx'
 import Streaks from './views/Streaks.jsx'
@@ -24,14 +25,16 @@ export default function App() {
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/charakterbogen" element={<Charakterbogen />} />
-        <Route path="/streaks" element={<Streaks />} />
-        <Route path="/skill-tree" element={<SkillTree />} />
-        <Route path="/finanzen" element={<Finanzen />} />
-      </Routes>
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/charakterbogen" element={<Charakterbogen />} />
+          <Route path="/streaks" element={<Streaks />} />
+          <Route path="/skill-tree" element={<SkillTree />} />
+          <Route path="/finanzen" element={<Finanzen />} />
+        </Routes>
+      </Layout>
+    </ErrorBoundary>
   )
 }
