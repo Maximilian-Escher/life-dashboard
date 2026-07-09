@@ -1,5 +1,6 @@
-// Katalog aller Home-Widgets + Standard-Reihenfolge. Neue Widgets hier
-// eintragen, die eigentliche Komponenten-Zuordnung passiert in Home.jsx.
+// Katalog aller Home-Widgets + Standard-Größen/Reihenfolge fürs Grid. Neue
+// Widgets hier eintragen, die eigentliche Komponenten-Zuordnung passiert in
+// Home.jsx.
 
 export const WIDGET_LABELS = {
   weather: 'Wetter',
@@ -10,6 +11,22 @@ export const WIDGET_LABELS = {
   stats: 'Stats',
   streaks: 'Streak-Grid',
   skilltree: 'Skill-Tree Hinweis',
+}
+
+// Spalten im Desktop-Grid (siehe Breakpoints/cols in Home.jsx).
+export const COLS = 4
+
+// Default-Größe + Grenzen pro Widget-Typ, in Grid-Einheiten (w/h = Spalten/
+// Zeilen, siehe rowHeight in Home.jsx für die Pixel-Umrechnung).
+export const WIDGET_SIZES = {
+  weather: { w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 4 },
+  recovery: { w: 4, h: 2, minW: 2, minH: 2, maxW: 4, maxH: 3 },
+  creatine: { w: 2, h: 4, minW: 1, minH: 3, maxW: 4, maxH: 5 },
+  training: { w: 2, h: 4, minW: 1, minH: 3, maxW: 4, maxH: 5 },
+  oura: { w: 4, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 4 },
+  stats: { w: 4, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 4 },
+  streaks: { w: 4, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 4 },
+  skilltree: { w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 4 },
 }
 
 export const DEFAULT_WIDGET_ORDER = [

@@ -31,3 +31,47 @@ body {
 .skill-node-celebrate {
   animation: skill-node-glow 900ms ease-out;
 }
+
+/* react-grid-layout: ans dunkle Theme angepasst + Resize-Handles immer
+   sichtbar statt nur bei :hover (auf Touch-Geräten gibt es kein Hover).
+   Descendant- statt Direct-Child-Selektoren, weil GridWidgetItem den Handle
+   über verschachtelte Wrapper-Divs rendert statt als direktes Kind. */
+.react-grid-item.react-grid-placeholder {
+  background: var(--color-accent) !important;
+  opacity: 0.15 !important;
+  border-radius: 0.75rem;
+}
+
+/* Überschreibt react-resizable's eigene ".react-resizable-hide > .react-
+   resizable-handle { display: none }" – die greift bei uns wegen der
+   Verschachtelung nicht (Direct-Child-Selektor), hier per Descendant-
+   Selektor + höherer Spezifität nachgeholt. */
+.react-resizable-hide .react-resizable-handle {
+  display: none !important;
+}
+
+.react-grid-item .react-resizable-handle {
+  opacity: 1;
+}
+
+.react-grid-item .react-resizable-handle::after {
+  border-right-color: var(--color-border);
+  border-bottom-color: var(--color-border);
+  width: 7px;
+  height: 7px;
+}
+
+.react-grid-item .react-resizable-handle-e::after,
+.react-grid-item .react-resizable-handle-w::after,
+.react-grid-item .react-resizable-handle-s::after,
+.react-grid-item .react-resizable-handle-n::after {
+  border-color: var(--color-border);
+}
+
+/* Ohne das interpretiert der Browser eine vertikale Touch-Geste auf dem
+   Handle als Seiten-Scroll statt sie ans Drag/Resize durchzureichen (die
+   Karte selbst bleibt bewusst scrollbar/touch-action:auto). */
+.widget-drag-handle,
+.react-grid-item .react-resizable-handle {
+  touch-action: none;
+}

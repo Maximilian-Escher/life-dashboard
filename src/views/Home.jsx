@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { useEffect, useMemo, useState } from 'react'
+import { Responsive, WidthProvider } from 'react-grid-layout/legacy'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
 import { recovery as dummyRecovery, dailyQuests } from '../data/dummyData.js'
-import { WIDGET_LABELS } from '../data/dashboardWidgets.js'
+import { WIDGET_LABELS, WIDGET_SIZES } from '../data/dashboardWidgets.js'
 import { connectOura, isConnected, clearTokens } from '../lib/ouraAuth.js'
 import { fetchOuraDays } from '../lib/ouraApi.js'
 import { getLoggedDates, toggleDay, todayIso, getCurrentStreak } from '../lib/habitLog.js'
@@ -12,8 +13,8 @@ import { getCompletedNodeIds } from '../lib/skillTreeProgress.js'
 import { getNodes as getSkillTreeNodes } from '../lib/skillTreeNodes.js'
 import { getInProgressNodeByBranch } from '../lib/skillTree.js'
 import { skillTreeBranches } from '../data/skillTree.js'
-import { getLayout, saveLayout } from '../lib/dashboardLayout.js'
-import SortableWidgetItem from '../components/dashboard/SortableWidgetItem.jsx'
+import { getLayout, saveLayout, deriveLayoutForCols } from '../lib/dashboardLayout.js'
+import GridWidgetItem from '../components/dashboard/GridWidgetItem.jsx'
 import RecoveryWidget from '../components/widgets/RecoveryWidget.jsx'
 import HabitToggleWidget from '../components/widgets/HabitToggleWidget.jsx'
 import OuraWidget from '../components/widgets/OuraWidget.jsx'
@@ -21,6 +22,18 @@ import StatsWidget from '../components/widgets/StatsWidget.jsx'
 import StreakPreviewWidget from '../components/widgets/StreakPreviewWidget.jsx'
 import SkillTreeHintWidget from '../components/widgets/SkillTreeHintWidget.jsx'
 import WeatherWidget from '../components/widgets/WeatherWidget.jsx'
+
+const ResponsiveGridLayout = WidthProvider(Responsive)
+
+// react-grid-layout misst die Breite des Grid-CONTAINERS, nicht des
+// Viewports – wegen der Sidebar (Desktop) ist der Container schmaler als
+// der Viewport, und zwar nicht monoton (die Sidebar frisst ab 768px
+// Viewport-Breite plötzlich ~260px weg). Werte sind daher an gemessenen
+// Container-Breiten kalibriert, nicht 1:1 an den Tailwind-Breakpoints.
+const BREAKPOINTS = { lg: 600, md: 400, sm: 0 }
+const COLS_BY_BREAKPOINT = { lg: 4, md: 2, sm: 1 }
+const ROW_HEIGHT = 56
+const GRID_MARGIN = [16, 16]
 
 // 30 Tage statt nur 7, weil Vitalität (letzte 7) und die Schritte-Komponente
 // von Disziplin (letzte 30) sich dieselben geladenen Oura-Tage teilen.
@@ -50,8 +63,10 @@ export default function Home() {
   const [layout, setLayout] = useState([])
   const [layoutError, setLayoutError] = useState(null)
   const [editing, setEditing] = useState(false)
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  // null (nicht 'lg'/4) als sicherer Default: bevor die erste echte Messung
+  // via onWidthChange reinkommt, soll handleLayoutChange NICHT annehmen,
+  // wir wären auf Desktop-Breite (siehe Kommentar dort).
+  const [currentCols, setCurrentCols] = useState(null)
 
   useEffect(() => {
     if (!connected) return
@@ -187,21 +202,36 @@ export default function Home() {
     }
   }
 
-  function handleDragEnd(event) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
+  function toggleWidgetVisible(key) {
     setLayout((items) => {
-      const oldIndex = items.findIndex((i) => i.key === active.id)
-      const newIndex = items.findIndex((i) => i.key === over.id)
-      const next = arrayMove(items, oldIndex, newIndex)
+      const next = items.map((i) => (i.key === key ? { ...i, visible: !i.visible } : i))
       saveLayout(next).catch((err) => setLayoutError(err.message))
       return next
     })
   }
 
-  function toggleWidgetVisible(key) {
-    setLayout((items) => {
-      const next = items.map((i) => (i.key === key ? { ...i, visible: !i.visible } : i))
+  // Nur bei Änderungen im Anpassen-Modus speichern. Auf der Desktop-Breite
+  // (lg, 4 Spalten) übernehmen wir x/y/w/h 1:1 – das ist das kanonische
+  // Layout. Auf schmaleren Breakpoints (weniger Spalten als gespeichert)
+  // ergibt nur die Höhe einen sinnvollen Rückschluss aufs Basis-Layout,
+  // Breite/Position bleiben vom Desktop-Layout bestimmt.
+  //
+  // Spaltenzahl kommt bewusst aus onWidthChange (currentCols), nicht aus
+  // onBreakpointChange: Letzteres feuert nur bei einem tatsächlichen
+  // Breakpoint-WECHSEL, nicht beim initialen Rendern auf einem schmalen
+  // Viewport – der State bliebe dann fälschlich auf dem 'lg'-Default
+  // stehen und würde die Mobile-Größe ins Desktop-Layout schreiben.
+  function handleLayoutChange(currentBpLayout) {
+    if (!editing) return
+    setLayout((prev) => {
+      const next = prev.map((item) => {
+        const changed = currentBpLayout.find((l) => l.i === item.key)
+        if (!changed) return item
+        if (currentCols === COLS_BY_BREAKPOINT.lg) {
+          return { ...item, x: changed.x, y: changed.y, w: changed.w, h: changed.h }
+        }
+        return { ...item, h: changed.h }
+      })
       saveLayout(next).catch((err) => setLayoutError(err.message))
       return next
     })
@@ -270,6 +300,26 @@ export default function Home() {
     skilltree: <SkillTreeHintWidget branches={inProgressBranches} inProgressByBranch={inProgressByBranch} />,
   }
 
+  const visibleLayout = editing ? layout : layout.filter((item) => item.visible)
+
+  const lgLayoutItems = useMemo(
+    () =>
+      visibleLayout.map((item) => {
+        const { minW, maxW, minH, maxH } = WIDGET_SIZES[item.key]
+        return { i: item.key, x: item.x, y: item.y, w: item.w, h: item.h, minW, maxW, minH, maxH }
+      }),
+    [visibleLayout],
+  )
+
+  const gridLayouts = useMemo(
+    () => ({
+      lg: lgLayoutItems,
+      md: deriveLayoutForCols(lgLayoutItems, COLS_BY_BREAKPOINT.md),
+      sm: deriveLayoutForCols(lgLayoutItems, COLS_BY_BREAKPOINT.sm),
+    }),
+    [lgLayoutItems],
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between gap-4">
@@ -319,28 +369,42 @@ export default function Home() {
       )}
       {editing && (
         <p className="text-xs text-zinc-500">
-          Ziehe die Widgets per Punkte-Icon in eine neue Reihenfolge oder blende sie über die Checkbox aus.
+          Ziehe Widgets per Punkte-Icon zum Umsortieren, am rechten/unteren Rand zum Verändern der Größe. Checkbox
+          blendet ein/aus.
         </p>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={layout.map((item) => item.key)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-4">
-            {layout.map((item) => (
-              <SortableWidgetItem
-                key={item.key}
-                id={item.key}
-                label={WIDGET_LABELS[item.key]}
-                visible={item.visible}
-                editing={editing}
-                onToggleVisible={() => toggleWidgetVisible(item.key)}
-              >
-                {widgetContent[item.key]}
-              </SortableWidgetItem>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {layout.length > 0 && (
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={gridLayouts}
+          breakpoints={BREAKPOINTS}
+          cols={COLS_BY_BREAKPOINT}
+          rowHeight={ROW_HEIGHT}
+          margin={GRID_MARGIN}
+          containerPadding={[0, 0]}
+          compactType="vertical"
+          isBounded
+          isDraggable={editing}
+          isResizable={editing}
+          resizeHandles={['e', 's', 'se']}
+          draggableHandle=".widget-drag-handle"
+          onWidthChange={(width, margin, cols) => setCurrentCols(cols)}
+          onLayoutChange={handleLayoutChange}
+        >
+          {visibleLayout.map((item) => (
+            <GridWidgetItem
+              key={item.key}
+              label={WIDGET_LABELS[item.key]}
+              visible={item.visible}
+              editing={editing}
+              onToggleVisible={() => toggleWidgetVisible(item.key)}
+            >
+              {widgetContent[item.key]}
+            </GridWidgetItem>
+          ))}
+        </ResponsiveGridLayout>
+      )}
 
       <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <h2 className="mb-3 text-sm font-medium text-zinc-300">Daily Quests</h2>

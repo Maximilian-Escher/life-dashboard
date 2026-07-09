@@ -211,17 +211,40 @@ create policy "Nutzer aktualisieren eigene Wetter-Einstellungen"
   with check (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------
--- dashboard_layout: Reihenfolge + Sichtbarkeit der Home-Widgets, pro Nutzer.
+-- dashboard_layout: Grid-Position (x/y) + Größe (w/h) + Sichtbarkeit der
+-- Home-Widgets, pro Nutzer. x/y/w/h sind Grid-Einheiten (siehe COLS in
+-- src/data/dashboardWidgets.js), nicht Pixel.
 -- ---------------------------------------------------------------------
 
 create table if not exists public.dashboard_layout (
   user_id uuid not null references auth.users (id) on delete cascade,
   widget_key text not null,
-  position integer not null,
+  x integer not null default 0,
+  y integer not null default 0,
+  w integer not null default 2,
+  h integer not null default 2,
   visible boolean not null default true,
   updated_at timestamptz not null default now(),
   primary key (user_id, widget_key)
 );
+
+-- Migration von der alten listenbasierten Version (nur "position" statt
+-- x/y/w/h). Läuft gefahrlos auch auf frischen Installationen durch, die
+-- "position" nie hatten.
+alter table public.dashboard_layout add column if not exists x integer not null default 0;
+alter table public.dashboard_layout add column if not exists y integer not null default 0;
+alter table public.dashboard_layout add column if not exists w integer not null default 2;
+alter table public.dashboard_layout add column if not exists h integer not null default 2;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'dashboard_layout' and column_name = 'position'
+  ) then
+    alter table public.dashboard_layout alter column position drop not null;
+  end if;
+end $$;
 
 alter table public.dashboard_layout enable row level security;
 

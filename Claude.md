@@ -25,7 +25,7 @@ Gamifiziertes Life-OS als PWA. Reale Daten (Schlaf, Training, Finanzen) werden z
 - [x] Stats/XP-Berechnung
 - [x] Skill-Tree
 - [x] Supabase-Anbindung
-- [x] Anpassbares Dashboard (Drag & Drop, Sichtbarkeit) + Wetter-Widget (Open-Meteo)
+- [x] Anpassbares Dashboard (Grid-Layout mit react-grid-layout: Umsortieren + Größenänderung, responsive Breakpoints) + Wetter-Widget (Open-Meteo)
 - [ ] Deployment + PWA-Test
 
 ## Referenzen
