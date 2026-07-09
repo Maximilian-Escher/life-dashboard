@@ -5,8 +5,24 @@ import Charakterbogen from './views/Charakterbogen.jsx'
 import Streaks from './views/Streaks.jsx'
 import SkillTree from './views/SkillTree.jsx'
 import Finanzen from './views/Finanzen.jsx'
+import Login from './views/Login.jsx'
+import { useAuth } from './lib/AuthContext.jsx'
 
 export default function App() {
+  const { session } = useAuth()
+
+  if (session === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] text-sm text-zinc-500">
+        Lade…
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Login />
+  }
+
   return (
     <Layout>
       <Routes>

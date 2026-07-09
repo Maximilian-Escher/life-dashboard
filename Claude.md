@@ -22,9 +22,9 @@ Gamifiziertes Life-OS als PWA. Reale Daten (Schlaf, Training, Finanzen) werden z
 - [x] Grundgerüst (leere Views, Navigation, Styling)
 - [x] Oura-Integration
 - [x] Streak-Grid + Kreatin-Checkbox
-- [ ] Stats/XP-Berechnung
+- [x] Stats/XP-Berechnung
 - [ ] Skill-Tree
-- [ ] Supabase-Anbindung
+- [x] Supabase-Anbindung
 - [ ] Deployment + PWA-Test
 
 ## Referenzen

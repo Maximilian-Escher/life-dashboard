@@ -1,10 +1,10 @@
 import { getValidAccessToken } from './ouraAuth.js'
 
-export async function fetchOuraLast7Days() {
+export async function fetchOuraDays(days = 7) {
   const accessToken = await getValidAccessToken()
   if (!accessToken) throw new Error('Nicht mit Oura verbunden.')
 
-  const res = await fetch('/.netlify/functions/oura-data', {
+  const res = await fetch(`/.netlify/functions/oura-data?days=${days}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
 
@@ -14,4 +14,8 @@ export async function fetchOuraLast7Days() {
   }
 
   return res.json()
+}
+
+export function fetchOuraLast7Days() {
+  return fetchOuraDays(7)
 }

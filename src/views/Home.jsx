@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { stats, recovery as dummyRecovery, dailyQuests } from '../data/dummyData.js'
+import { recovery as dummyRecovery, dailyQuests } from '../data/dummyData.js'
 import { connectOura, isConnected, clearTokens } from '../lib/ouraAuth.js'
 import { fetchOuraLast7Days } from '../lib/ouraApi.js'
 import { getLoggedDates, toggleDay, todayIso, getCurrentStreak } from '../lib/habitLog.js'
+import { getPortfolioSnapshots, getPortfolioGoal } from '../lib/portfolio.js'
+import { calculateVitalitaet, calculateDisziplin, calculateWealth, calculateLevel } from '../lib/stats.js'
 import StreakGrid from '../components/StreakGrid.jsx'
 
 const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' })
@@ -20,7 +22,9 @@ export default function Home() {
   const [ouraDays, setOuraDays] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [creatineDates, setCreatineDates] = useState(() => getLoggedDates('creatine'))
+  const [creatineDates, setCreatineDates] = useState(new Set())
+  const [creatineError, setCreatineError] = useState(null)
+  const [portfolio, setPortfolio] = useState({ value: null, goal: null })
 
   useEffect(() => {
     if (!connected) return
@@ -44,6 +48,34 @@ export default function Home() {
     }
   }, [connected])
 
+  useEffect(() => {
+    let cancelled = false
+    getLoggedDates('creatine')
+      .then((dates) => {
+        if (!cancelled) setCreatineDates(dates)
+      })
+      .catch((err) => {
+        if (!cancelled) setCreatineError(err.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([getPortfolioSnapshots(3650), getPortfolioGoal()])
+      .then(([snapshots, goal]) => {
+        if (!cancelled) setPortfolio({ value: snapshots[snapshots.length - 1]?.value ?? null, goal })
+      })
+      .catch(() => {
+        // Wealth zeigt dann einfach "Noch keine Daten" – kein eigener Fehlerbanner nötig
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function handleConnect() {
     setError(null)
     setConnecting(true)
@@ -63,12 +95,27 @@ export default function Home() {
     setOuraDays(null)
   }
 
-  function handleToggleCreatine() {
-    setCreatineDates(toggleDay('creatine', todayIso()))
+  async function handleToggleCreatine() {
+    setCreatineError(null)
+    try {
+      const dates = await toggleDay('creatine', todayIso())
+      setCreatineDates(dates)
+    } catch (err) {
+      setCreatineError(err.message)
+    }
   }
 
   const creatineToday = creatineDates.has(todayIso())
   const creatineStreak = getCurrentStreak(creatineDates)
+
+  // Disziplin nutzt hier direkt die schon geladenen Kreatin-Daten. Sobald
+  // TRACKED_HABIT_KEYS (stats.js) mehr als 'creatine' enthält, hier die
+  // zusätzlichen Habits ebenfalls laden und in dieses Objekt aufnehmen.
+  const statCards = [
+    { key: 'vitalitaet', label: 'Vitalität', value: ouraDays ? calculateVitalitaet(ouraDays) : null },
+    { key: 'disziplin', label: 'Disziplin', value: calculateDisziplin({ creatine: creatineDates }, 30) },
+    { key: 'wealth', label: 'Wealth', value: calculateWealth(portfolio.value, portfolio.goal) },
+  ]
 
   const latestDay = ouraDays?.[ouraDays.length - 1]
   const recoveryScore = latestDay?.readinessScore
@@ -200,6 +247,7 @@ export default function Home() {
             {creatineToday ? 'Heute genommen' : 'Heute noch nicht genommen'}
           </span>
         </button>
+        {creatineError && <p className="mt-2 text-xs text-rose-400">{creatineError}</p>}
         <div className="mt-4">
           <StreakGrid doneDates={creatineDates} weeks={12} />
         </div>
@@ -208,16 +256,22 @@ export default function Home() {
       <section>
         <h2 className="mb-3 text-sm font-medium text-zinc-300">Stats</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {stats.map((s) => (
+          {statCards.map((s) => (
             <div
               key={s.key}
               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
             >
               <p className="text-xs text-zinc-500">{s.label}</p>
-              <p className="mt-1 text-xl font-semibold text-white">
-                {s.value} <span className="text-xs font-normal text-zinc-500">/ 100</span>
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">Level {s.level}</p>
+              {s.value == null ? (
+                <p className="mt-1 text-sm text-zinc-500">Noch keine Daten</p>
+              ) : (
+                <>
+                  <p className="mt-1 text-xl font-semibold text-white">
+                    {s.value} <span className="text-xs font-normal text-zinc-500">/ 100</span>
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">Level {calculateLevel(s.value).level}</p>
+                </>
+              )}
             </div>
           ))}
         </div>

@@ -1,12 +1,7 @@
-// LocalStorage-Persistenz für Habit-Logs. Pro erledigtem Tag ein Eintrag
-// (kein Eintrag = nicht erledigt) – bildet sich später 1:1 auf eine
-// Supabase-Tabelle "habit_logs(habit_key, date)" ab.
+// Habit-Logs in Supabase (Tabelle "habit_logs", RLS auf auth.uid()).
+// Pro erledigtem Tag eine Zeile (keine Zeile = nicht erledigt).
 
-const STORAGE_PREFIX = 'habit-log:'
-
-function storageKey(habitKey) {
-  return `${STORAGE_PREFIX}${habitKey}`
-}
+import { supabase } from './supabaseClient.js'
 
 // Bewusst über lokale Datumskomponenten statt toISOString() (das auf UTC
 // normalisiert und z.B. um Mitternacht MESZ auf den Vortag springen würde).
@@ -21,29 +16,42 @@ export function todayIso() {
   return toIsoDate(new Date())
 }
 
-export function getLoggedDates(habitKey) {
-  const raw = localStorage.getItem(storageKey(habitKey))
-  if (!raw) return new Set()
-  try {
-    return new Set(JSON.parse(raw))
-  } catch {
-    return new Set()
-  }
+export async function getLoggedDates(habitKey) {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('date')
+    .eq('habit_key', habitKey)
+
+  if (error) throw error
+  return new Set(data.map((row) => row.date))
 }
 
-export function isDoneOn(habitKey, dateIso) {
-  return getLoggedDates(habitKey).has(dateIso)
-}
+export async function toggleDay(habitKey, dateIso) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Nicht eingeloggt.')
 
-export function toggleDay(habitKey, dateIso) {
-  const dates = getLoggedDates(habitKey)
-  if (dates.has(dateIso)) {
-    dates.delete(dateIso)
+  const { data: existing, error: selectError } = await supabase
+    .from('habit_logs')
+    .select('id')
+    .eq('habit_key', habitKey)
+    .eq('date', dateIso)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+
+  if (existing) {
+    const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
+    if (error) throw error
   } else {
-    dates.add(dateIso)
+    const { error } = await supabase
+      .from('habit_logs')
+      .insert({ user_id: user.id, habit_key: habitKey, date: dateIso })
+    if (error) throw error
   }
-  localStorage.setItem(storageKey(habitKey), JSON.stringify([...dates]))
-  return dates
+
+  return getLoggedDates(habitKey)
 }
 
 // Zählt rückwärts ab heute (bzw. ab gestern, falls heute noch offen ist,

@@ -1,12 +1,6 @@
 // Platzhalter-Daten fürs Grundgerüst. Struktur bleibt gleich, wenn später
 // echte Daten von Oura/Supabase reinkommen.
 
-export const stats = [
-  { key: 'vitalitaet', label: 'Vitalität', value: 68, level: 7, xp: 340, xpToNext: 500 },
-  { key: 'disziplin', label: 'Disziplin', value: 74, level: 8, xp: 120, xpToNext: 400 },
-  { key: 'wealth', label: 'Wealth', value: 41, level: 4, xp: 90, xpToNext: 300 },
-]
-
 export const recovery = {
   score: 72,
   status: 'buff', // 'buff' | 'neutral' | 'debuff'
@@ -52,16 +46,3 @@ export const skillTree = [
     ],
   },
 ]
-
-export const finance = {
-  currentValue: 8250,
-  goalValue: 25000,
-  history: [
-    { month: 'Feb', value: 6100 },
-    { month: 'Mär', value: 6700 },
-    { month: 'Apr', value: 7200 },
-    { month: 'Mai', value: 7550 },
-    { month: 'Jun', value: 7900 },
-    { month: 'Jul', value: 8250 },
-  ],
-}
