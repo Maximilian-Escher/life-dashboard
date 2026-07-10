@@ -190,3 +190,14 @@ html.light .bg-blob {
 .react-grid-item .react-resizable-handle {
   touch-action: none;
 }
+
+/* Layout.jsx setzt text-zinc-100 als App-weite Basistextfarbe, unabhängig
+   vom Theme (bestehendes Verhalten, hier nicht angefasst) – für neu
+   hinzukommenden hervorgehobenen Text braucht es deshalb eine explizite
+   Hell/Dunkel-Variante statt der vererbten Farbe. */
+.portfolio-tooltip-value {
+  color: #f4f4f5;
+}
+html.light .portfolio-tooltip-value {
+  color: #18181b;
+}

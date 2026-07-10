@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   getPortfolioSnapshots,
   getPortfolioGoal,
@@ -7,6 +8,24 @@ import {
   DEFAULT_GOAL,
 } from '../lib/portfolio.js'
 import { todayIso } from '../lib/habitLog.js'
+import CsvImportModal from '../components/CsvImportModal.jsx'
+
+function formatShortDate(iso) {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+}
+
+function PortfolioTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const point = payload[0].payload
+  return (
+    <div className="glass-panel-strong rounded-xl px-3 py-2 text-xs">
+      <p className="text-zinc-500">
+        {new Date(point.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+      </p>
+      <p className="portfolio-tooltip-value mt-0.5 font-semibold">{point.value.toLocaleString('de-DE')} €</p>
+    </div>
+  )
+}
 
 export default function Finanzen() {
   const [snapshots, setSnapshots] = useState([])
@@ -17,6 +36,8 @@ export default function Finanzen() {
   const [valueInput, setValueInput] = useState('')
   const [dateInput, setDateInput] = useState(todayIso())
   const [saving, setSaving] = useState(false)
+
+  const [csvModalOpen, setCsvModalOpen] = useState(false)
 
   const [editingGoal, setEditingGoal] = useState(false)
   const [goalInput, setGoalInput] = useState('')
@@ -79,8 +100,6 @@ export default function Finanzen() {
 
   const latest = snapshots[snapshots.length - 1]
   const progress = latest ? Math.min(100, Math.round((latest.value / goal) * 100)) : 0
-  const recentHistory = snapshots.slice(-12)
-  const maxHistory = Math.max(1, ...recentHistory.map((s) => s.value))
 
   return (
     <div className="flex flex-col gap-7">
@@ -133,32 +152,59 @@ export default function Finanzen() {
 
       <section className="glass-panel rounded-2xl p-5">
         <h2 className="mb-4 text-[12.5px] font-semibold text-zinc-400">Verlauf</h2>
-        {recentHistory.length === 0 ? (
+        {snapshots.length === 0 ? (
           <p className="text-sm text-zinc-500">Noch keine Einträge.</p>
+        ) : snapshots.length === 1 ? (
+          <p className="text-sm text-zinc-500">Noch nicht genug Daten für einen Verlauf – trag mindestens zwei Werte ein.</p>
         ) : (
-          <div className="flex h-32 gap-3">
-            {recentHistory.map((s) => (
-              <div key={s.date} className="flex min-w-8 flex-1 flex-col items-center gap-2">
-                <div className="flex w-full flex-1 items-end">
-                  <div
-                    className="w-full rounded-t-md"
-                    style={{
-                      height: `${(s.value / maxHistory) * 100}%`,
-                      background: 'linear-gradient(180deg, var(--color-wealth), var(--color-accent))',
-                    }}
-                  />
-                </div>
-                <span className="text-[11px] text-zinc-500">
-                  {new Date(s.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
-                </span>
-              </div>
-            ))}
+          <div className="h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={snapshots} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="portfolioFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-wealth)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--color-wealth)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="var(--glass-track)" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={36}
+                />
+                <YAxis hide domain={['dataMin', 'dataMax']} />
+                <Tooltip content={<PortfolioTooltip />} cursor={{ stroke: 'var(--glass-border)', strokeWidth: 1 }} />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--color-wealth)"
+                  strokeWidth={2}
+                  fill="url(#portfolioFill)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: 'var(--color-wealth)', stroke: 'var(--color-bg)', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
       </section>
 
       <form onSubmit={handleAddSnapshot} className="glass-panel flex flex-col gap-3 rounded-2xl p-5">
-        <h2 className="text-[12.5px] font-semibold text-zinc-400">Portfolio-Update eintragen</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[12.5px] font-semibold text-zinc-400">Portfolio-Update eintragen</h2>
+          <button
+            type="button"
+            onClick={() => setCsvModalOpen(true)}
+            className="text-xs font-medium text-zinc-400 hover:text-white"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            CSV importieren
+          </button>
+        </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="number"
@@ -186,6 +232,8 @@ export default function Finanzen() {
           {saving ? 'Speichert…' : '+ Eintragen'}
         </button>
       </form>
+
+      <CsvImportModal open={csvModalOpen} onClose={() => setCsvModalOpen(false)} onImported={loadAll} />
     </div>
   )
 }
