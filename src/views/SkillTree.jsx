@@ -47,6 +47,7 @@ export default function SkillTree() {
     setError(null)
     try {
       await completeNode(modalNode.id)
+      if (navigator.vibrate) navigator.vibrate(25)
       setCompletedIds((prev) => new Set(prev).add(modalNode.id))
       setCelebratingNodeId(modalNode.id)
       setModalNode(null)
@@ -75,35 +76,29 @@ export default function SkillTree() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Skill-Tree</h1>
-          <p className="text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Daten aus Supabase'}</p>
+          <h1 className="text-[28px] font-bold tracking-tight text-white">Skill-Tree</h1>
+          <p className="mt-1.5 text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Daten aus Supabase'}</p>
         </div>
         <button
           type="button"
           onClick={() => setManageOpen(true)}
-          className="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-zinc-300 hover:text-white"
+          className="glass-panel shrink-0 rounded-xl px-3.5 py-2.5 text-sm text-zinc-300 hover:text-white"
         >
           Knoten verwalten
         </button>
       </header>
 
       {error && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">{error}</p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {skillTreeBranches.map((branch) => (
-          <div
-            key={branch.key}
-            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
-            style={{ borderTopColor: branch.color, borderTopWidth: 2 }}
-          >
-            <h2 className="mb-4 text-sm font-medium text-white">{branch.label}</h2>
+          <div key={branch.key} className="glass-panel rounded-2xl p-5" style={{ borderTop: `3px solid ${branch.color}` }}>
+            <h2 className="mb-4 text-sm font-semibold text-white">{branch.label}</h2>
             <div className="flex flex-col gap-2">
               {nodes
                 .filter((node) => node.branch === branch.key)
@@ -127,12 +122,7 @@ export default function SkillTree() {
         ))}
       </div>
 
-      <CompleteNodeModal
-        node={modalNode}
-        confirming={confirming}
-        onCancel={() => setModalNode(null)}
-        onConfirm={handleConfirm}
-      />
+      <CompleteNodeModal node={modalNode} confirming={confirming} onCancel={() => setModalNode(null)} onConfirm={handleConfirm} />
 
       <ManageNodesModal
         open={manageOpen}

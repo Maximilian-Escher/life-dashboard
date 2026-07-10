@@ -25,18 +25,11 @@ import WeatherWidget from '../components/widgets/WeatherWidget.jsx'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
-// react-grid-layout misst die Breite des Grid-CONTAINERS, nicht des
-// Viewports – wegen der Sidebar (Desktop) ist der Container schmaler als
-// der Viewport, und zwar nicht monoton (die Sidebar frisst ab 768px
-// Viewport-Breite plötzlich ~260px weg). Werte sind daher an gemessenen
-// Container-Breiten kalibriert, nicht 1:1 an den Tailwind-Breakpoints.
 const BREAKPOINTS = { lg: 600, md: 400, sm: 0 }
 const COLS_BY_BREAKPOINT = { lg: 4, md: 2, sm: 1 }
 const ROW_HEIGHT = 56
-const GRID_MARGIN = [16, 16]
+const GRID_MARGIN = [20, 20]
 
-// 30 Tage statt nur 7, weil Vitalität (letzte 7) und die Schritte-Komponente
-// von Disziplin (letzte 30) sich dieselben geladenen Oura-Tage teilen.
 const OURA_FETCH_DAYS = 30
 
 function recoveryFromScore(score) {
@@ -63,9 +56,6 @@ export default function Home() {
   const [layout, setLayout] = useState([])
   const [layoutError, setLayoutError] = useState(null)
   const [editing, setEditing] = useState(false)
-  // null (nicht 'lg'/4) als sicherer Default: bevor die erste echte Messung
-  // via onWidthChange reinkommt, soll handleLayoutChange NICHT annehmen,
-  // wir wären auf Desktop-Breite (siehe Kommentar dort).
   const [currentCols, setCurrentCols] = useState(null)
 
   useEffect(() => {
@@ -124,9 +114,7 @@ export default function Home() {
       .then(([snapshots, goal]) => {
         if (!cancelled) setPortfolio({ value: snapshots[snapshots.length - 1]?.value ?? null, goal })
       })
-      .catch(() => {
-        // Wealth zeigt dann einfach "Noch keine Daten" – kein eigener Fehlerbanner nötig
-      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -141,9 +129,7 @@ export default function Home() {
           setSkillCompletedIds(ids)
         }
       })
-      .catch(() => {
-        // Hinweis-Box zeigt dann einfach nichts an – kein eigener Fehlerbanner nötig
-      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -210,17 +196,6 @@ export default function Home() {
     })
   }
 
-  // Nur bei Änderungen im Anpassen-Modus speichern. Auf der Desktop-Breite
-  // (lg, 4 Spalten) übernehmen wir x/y/w/h 1:1 – das ist das kanonische
-  // Layout. Auf schmaleren Breakpoints (weniger Spalten als gespeichert)
-  // ergibt nur die Höhe einen sinnvollen Rückschluss aufs Basis-Layout,
-  // Breite/Position bleiben vom Desktop-Layout bestimmt.
-  //
-  // Spaltenzahl kommt bewusst aus onWidthChange (currentCols), nicht aus
-  // onBreakpointChange: Letzteres feuert nur bei einem tatsächlichen
-  // Breakpoint-WECHSEL, nicht beim initialen Rendern auf einem schmalen
-  // Viewport – der State bliebe dann fälschlich auf dem 'lg'-Default
-  // stehen und würde die Mobile-Größe ins Desktop-Layout schreiben.
   function handleLayoutChange(currentBpLayout) {
     if (!editing) return
     setLayout((prev) => {
@@ -242,9 +217,6 @@ export default function Home() {
   const trainingToday = trainingDates.has(todayIso())
   const trainingStreak = getCurrentStreak(trainingDates)
 
-  // Disziplin nutzt hier direkt die schon geladenen Kreatin-/Trainings-Daten
-  // plus die aus ouraDays abgeleiteten Schritte-Tage (kein Extra-Fetch
-  // nötig, das deckt sich mit TRACKED_HABIT_KEYS in stats.js).
   const disziplinHabitDates = {
     creatine: creatineDates,
     training: trainingDates,
@@ -321,24 +293,28 @@ export default function Home() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Übersicht</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="text-[28px] font-bold tracking-tight text-white">Übersicht</h1>
+          <p className="mt-1.5 text-sm text-zinc-500">
             {connected ? 'Live-Daten von Oura' : 'Platzhalter-Daten – noch keine Live-Integration'}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2.5">
           {connected ? (
-            <button onClick={handleDisconnect} className="text-xs text-zinc-500 hover:text-zinc-300">
+            <button
+              onClick={handleDisconnect}
+              className="rounded-xl border border-white/10 px-3.5 py-2.5 text-[13px] font-medium text-zinc-400 hover:text-zinc-200"
+            >
               Oura trennen
             </button>
           ) : (
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
+              className="rounded-xl px-3.5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
+              style={{ background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))' }}
             >
               {connecting ? 'Verbinde…' : 'Mit Oura verbinden'}
             </button>
@@ -346,11 +322,16 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setEditing((e) => !e)}
-            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+            className="rounded-xl px-4.5 py-2.5 text-[13.5px] font-semibold transition-colors"
+            style={
               editing
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-white'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-zinc-300 hover:text-white'
-            }`}
+                ? { background: 'rgba(255,255,255,0.1)', color: 'white' }
+                : {
+                    background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))',
+                    color: 'white',
+                    boxShadow: '0 10px 24px -8px rgba(99,102,241,0.55)',
+                  }
+            }
           >
             {editing ? 'Fertig' : 'Dashboard anpassen'}
           </button>
@@ -358,12 +339,10 @@ export default function Home() {
       </header>
 
       {error && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">{error}</p>
       )}
       {layoutError && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">
           {layoutError}
         </p>
       )}
@@ -406,25 +385,21 @@ export default function Home() {
         </ResponsiveGridLayout>
       )}
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <h2 className="mb-3 text-sm font-medium text-zinc-300">Daily Quests</h2>
-        <ul className="flex flex-col gap-2">
+      <section className="glass-panel rounded-2xl p-5">
+        <h2 className="mb-3 text-[12.5px] font-semibold text-zinc-400">Daily Quests</h2>
+        <ul className="flex flex-col gap-2.5">
           {dailyQuests.map((q) => (
             <li key={q.id} className="flex items-center gap-3 text-sm">
               <span
-                className={`flex h-4 w-4 items-center justify-center rounded border ${
-                  q.done ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-[var(--color-border)]'
-                }`}
+                className="flex h-4 w-4 items-center justify-center rounded border"
+                style={{
+                  borderColor: q.done ? 'var(--color-accent)' : 'var(--glass-border)',
+                  background: q.done ? 'var(--color-accent)' : 'transparent',
+                }}
               >
                 {q.done && (
                   <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 text-white">
-                    <path
-                      d="M5 13l4 4L19 7"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </span>

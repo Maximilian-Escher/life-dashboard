@@ -83,25 +83,23 @@ export default function Finanzen() {
   const maxHistory = Math.max(1, ...recentHistory.map((s) => s.value))
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <header>
-        <h1 className="text-2xl font-semibold text-white">Finanzen</h1>
-        <p className="text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Daten aus Supabase'}</p>
+        <h1 className="text-[28px] font-bold tracking-tight text-white">Finanzen</h1>
+        <p className="mt-1.5 text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Daten aus Supabase'}</p>
       </header>
 
       {error && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">{error}</p>
       )}
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+      <section className="glass-panel-strong rounded-2xl p-5">
         <p className="text-xs text-zinc-500">Portfolio-Wert</p>
-        <p className="mt-1 text-2xl font-semibold text-white">
+        <p className="mt-1 text-2xl font-bold text-white">
           {latest ? `${latest.value.toLocaleString('de-DE')} €` : 'Noch kein Wert eingetragen'}
         </p>
 
-        <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+        <div className="mt-2.5 flex items-center gap-2 text-xs text-zinc-500">
           <span>Ziel:</span>
           {editingGoal ? (
             <form onSubmit={handleSaveGoal} className="flex items-center gap-2">
@@ -111,9 +109,9 @@ export default function Finanzen() {
                 step="0.01"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
-                className="w-32 rounded border border-[var(--color-border)] bg-transparent px-2 py-1 text-right text-zinc-200 focus:border-[var(--color-accent)] focus:outline-none"
+                className="w-32 rounded-lg border border-white/10 bg-transparent px-2 py-1 text-right text-zinc-200 focus:border-[var(--color-accent)] focus:outline-none"
               />
-              <button type="submit" disabled={savingGoal} className="text-[var(--color-accent)] hover:underline">
+              <button type="submit" disabled={savingGoal} style={{ color: 'var(--color-accent)' }} className="hover:underline">
                 Speichern
               </button>
             </form>
@@ -124,14 +122,17 @@ export default function Finanzen() {
           )}
         </div>
 
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]">
-          <div className="h-full rounded-full bg-[var(--color-accent)]" style={{ width: `${progress}%` }} />
+        <div className="mt-3.5 h-2 w-full overflow-hidden rounded-full" style={{ background: 'var(--glass-track)' }}>
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, var(--color-wealth), var(--color-accent))' }}
+          />
         </div>
-        <p className="mt-1 text-xs text-zinc-500">{progress}% zum Ziel</p>
+        <p className="mt-1.5 text-xs text-zinc-500">{progress}% zum Ziel</p>
       </section>
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <h2 className="mb-4 text-sm font-medium text-zinc-300">Verlauf</h2>
+      <section className="glass-panel rounded-2xl p-5">
+        <h2 className="mb-4 text-[12.5px] font-semibold text-zinc-400">Verlauf</h2>
         {recentHistory.length === 0 ? (
           <p className="text-sm text-zinc-500">Noch keine Einträge.</p>
         ) : (
@@ -140,8 +141,11 @@ export default function Finanzen() {
               <div key={s.date} className="flex min-w-8 flex-1 flex-col items-center gap-2">
                 <div className="flex w-full flex-1 items-end">
                   <div
-                    className="w-full rounded-t bg-[var(--color-accent)]"
-                    style={{ height: `${(s.value / maxHistory) * 100}%` }}
+                    className="w-full rounded-t-md"
+                    style={{
+                      height: `${(s.value / maxHistory) * 100}%`,
+                      background: 'linear-gradient(180deg, var(--color-wealth), var(--color-accent))',
+                    }}
                   />
                 </div>
                 <span className="text-[11px] text-zinc-500">
@@ -153,11 +157,8 @@ export default function Finanzen() {
         )}
       </section>
 
-      <form
-        onSubmit={handleAddSnapshot}
-        className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
-      >
-        <h2 className="text-sm font-medium text-zinc-300">Portfolio-Update eintragen</h2>
+      <form onSubmit={handleAddSnapshot} className="glass-panel flex flex-col gap-3 rounded-2xl p-5">
+        <h2 className="text-[12.5px] font-semibold text-zinc-400">Portfolio-Update eintragen</h2>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="number"
@@ -167,19 +168,20 @@ export default function Finanzen() {
             placeholder="Aktueller Wert in €"
             value={valueInput}
             onChange={(e) => setValueInput(e.target.value)}
-            className="flex-1 rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
+            className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
           />
           <input
             type="date"
             value={dateInput}
             onChange={(e) => setDateInput(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-white focus:border-[var(--color-accent)] focus:outline-none"
+            className="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-[var(--color-accent)] focus:outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={saving}
-          className="self-start rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
+          className="self-start rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+          style={{ background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))' }}
         >
           {saving ? 'Speichert…' : '+ Eintragen'}
         </button>

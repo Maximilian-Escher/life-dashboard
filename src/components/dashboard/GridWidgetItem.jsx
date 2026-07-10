@@ -14,16 +14,14 @@ const GridWidgetItem = forwardRef(function GridWidgetItem(
     <div
       ref={ref}
       style={style}
-      className={`${className} h-full overflow-hidden rounded-xl ${
-        editing
-          ? `border-2 border-dashed p-1.5 ${visible ? 'border-[var(--color-accent)]/40' : 'border-[var(--color-border)]'}`
-          : ''
+      className={`${className} glass-panel h-full overflow-hidden rounded-2xl ${
+        editing ? `!border-2 !border-dashed p-1.5 ${visible ? '!border-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]' : ''}` : ''
       }`}
       {...rest}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col p-5">
         {editing && (
-          <div className="mb-2 flex shrink-0 items-center gap-2 px-0.5">
+          <div className="mb-3 -mt-1.5 -ml-1.5 flex shrink-0 items-center gap-2">
             <span
               className="widget-drag-handle flex cursor-grab items-center text-zinc-500 hover:text-zinc-300 active:cursor-grabbing"
               aria-label="Ziehen zum Umsortieren"
@@ -48,9 +46,7 @@ const GridWidgetItem = forwardRef(function GridWidgetItem(
             </label>
           </div>
         )}
-        <div className={`min-h-0 flex-1 ${editing && !visible ? 'pointer-events-none opacity-40' : ''}`}>
-          {children}
-        </div>
+        <div className={`min-h-0 flex-1 ${editing && !visible ? 'pointer-events-none opacity-40' : ''}`}>{children}</div>
       </div>
     </div>
   )

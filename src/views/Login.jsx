@@ -35,12 +35,13 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
-      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <h1 className="mb-1 text-xl font-semibold text-white">Life Dashboard</h1>
-        <p className="mb-6 text-sm text-zinc-500">
-          {mode === 'login' ? 'Einloggen, um fortzufahren.' : 'Account erstellen.'}
-        </p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--color-bg)] px-4">
+      <div className="bg-blob bg-blob-a" />
+      <div className="bg-blob bg-blob-b" />
+
+      <div className="glass-panel-strong relative z-10 w-full max-w-sm rounded-2xl p-6">
+        <h1 className="mb-1 text-xl font-bold text-white">Life Dashboard</h1>
+        <p className="mb-6 text-sm text-zinc-500">{mode === 'login' ? 'Einloggen, um fortzufahren.' : 'Account erstellen.'}</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
@@ -50,7 +51,7 @@ export default function Login() {
             placeholder="E-Mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
+            className="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
           />
           <input
             type="password"
@@ -60,7 +61,7 @@ export default function Login() {
             placeholder="Passwort"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
+            className="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none"
           />
 
           {error && <p className="text-sm text-rose-400">{error}</p>}
@@ -69,7 +70,8 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
+            className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+            style={{ background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))' }}
           >
             {loading ? 'Bitte warten…' : mode === 'login' ? 'Einloggen' : 'Account erstellen'}
           </button>

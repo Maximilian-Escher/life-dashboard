@@ -18,12 +18,12 @@ export default function InfoTooltip({ text }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Wie wird das berechnet?"
-        className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--color-border)] text-[10px] text-zinc-500 transition-colors hover:border-zinc-400 hover:text-zinc-300"
+        className="flex h-4 w-4 items-center justify-center rounded-full border border-white/15 text-[10px] text-zinc-500 transition-colors hover:border-zinc-400 hover:text-zinc-300"
       >
         i
       </button>
       {open && (
-        <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-3 text-xs leading-relaxed text-zinc-300 shadow-lg">
+        <div className="glass-panel-strong absolute left-0 top-6 z-10 w-56 rounded-xl p-3 text-xs leading-relaxed text-zinc-300">
           {text}
         </div>
       )}
