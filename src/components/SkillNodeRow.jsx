@@ -1,14 +1,10 @@
-const STATUS_STYLES = {
-  completed: 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-white',
-  'in-progress': 'border-[var(--color-border)] text-zinc-200 hover:bg-[var(--color-surface-hover)] cursor-pointer',
-  locked: 'border-[var(--color-border)] text-zinc-600 cursor-not-allowed',
+const STATUS_STYLE = {
+  completed: { background: 'color-mix(in oklab, var(--color-accent) 18%, transparent)', color: 'white', cursor: 'default' },
+  'in-progress': { background: 'rgba(255,255,255,0.04)', color: 'inherit', cursor: 'pointer' },
+  locked: { background: 'transparent', color: 'inherit', opacity: 0.45, cursor: 'not-allowed' },
 }
 
-const STATUS_LABEL = {
-  completed: 'Abgeschlossen',
-  'in-progress': 'In Arbeit',
-  locked: 'Gesperrt',
-}
+const STATUS_LABEL = { completed: 'Abgeschlossen', 'in-progress': 'In Arbeit', locked: 'Gesperrt' }
 
 export default function SkillNodeRow({ node, status, celebrating, onClick }) {
   return (
@@ -16,20 +12,19 @@ export default function SkillNodeRow({ node, status, celebrating, onClick }) {
       type="button"
       disabled={status !== 'in-progress'}
       onClick={onClick}
-      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${STATUS_STYLES[status]} ${
-        celebrating ? 'skill-node-celebrate' : ''
+      style={{
+        ...STATUS_STYLE[status],
+        border: status === 'in-progress' ? '1px dashed var(--glass-border)' : '1px solid transparent',
+        '--glow-color': 'var(--color-accent)',
+      }}
+      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
+        celebrating ? 'glow-celebrate' : ''
       }`}
     >
       <span className="flex items-center gap-2">
         {status === 'completed' && (
-          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0 text-[var(--color-accent)]">
-            <path
-              d="M5 13l4 4L19 7"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0" style={{ color: 'var(--color-accent)' }}>
+            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
         {status === 'locked' && (

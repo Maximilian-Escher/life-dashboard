@@ -49,13 +49,8 @@ export default function StreakGrid({ doneDates, weeks = 52, endDate = new Date()
                 <div
                   key={iso}
                   title={`${day.toLocaleDateString('de-DE')}${isFuture ? '' : done ? ' – erledigt' : ' – offen'}`}
-                  className={`${cellClassName} rounded-sm ${
-                    isFuture
-                      ? 'bg-transparent'
-                      : done
-                        ? 'bg-[var(--color-accent)]'
-                        : 'bg-[var(--color-border)]'
-                  }`}
+                  className={`${cellClassName} rounded-[3px]`}
+                  style={{ background: isFuture ? 'transparent' : done ? 'var(--color-accent)' : 'var(--glass-track)' }}
                 />
               )
             })}

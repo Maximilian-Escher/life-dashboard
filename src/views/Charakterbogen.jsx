@@ -28,9 +28,6 @@ export default function Charakterbogen() {
     setError(null)
 
     async function load() {
-      // Muss vor loadDisziplinHabitDates abgeschlossen sein, da die
-      // 'steps'-Komponente der Disziplin-Berechnung aus denselben
-      // Oura-Tagesdaten abgeleitet wird.
       const ouraDaysResult = isConnected() ? (await fetchOuraDays(trendDays)).days : null
       if (cancelled) return
       setOuraDays(ouraDaysResult)
@@ -69,36 +66,37 @@ export default function Charakterbogen() {
   const wealthTrend = buildWealthTrend(snapshots, goal)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Charakterbogen</h1>
-          <p className="text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Berechnung'}</p>
+          <h1 className="text-[28px] font-bold tracking-tight text-white">Charakterbogen</h1>
+          <p className="mt-1.5 text-sm text-zinc-500">{loading ? 'Lade Daten…' : 'Live-Berechnung'}</p>
         </div>
         <div className="flex shrink-0 gap-2">
           {[30, 90].map((d) => (
             <button
               key={d}
               onClick={() => setTrendDays(d)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              className="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors"
+              style={
                 trendDays === d
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-[var(--color-surface)] text-zinc-400 hover:text-white'
-              }`}
+                  ? { background: 'var(--color-accent)', color: 'white' }
+                  : { background: 'var(--glass-track)', color: 'var(--color-border)' }
+              }
             >
-              {d} Tage
+              <span style={{ color: trendDays === d ? 'white' : undefined, opacity: trendDays === d ? 1 : 0.7 }}>
+                {d} Tage
+              </span>
             </button>
           ))}
         </div>
       </header>
 
       {error && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">{error}</p>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <StatDetailCard
           label="Vitalität"
           value={vitalitaet}

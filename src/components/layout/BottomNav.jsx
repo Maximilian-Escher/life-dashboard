@@ -3,7 +3,7 @@ import { navItems } from './navItems.js'
 
 export default function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur md:hidden">
+    <nav className="glass-bottomnav fixed inset-x-0 bottom-0 z-10 flex md:hidden">
       {navItems.map((item) => (
         <NavLink
           key={item.path}

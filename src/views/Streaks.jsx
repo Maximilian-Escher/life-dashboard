@@ -49,10 +49,10 @@ export default function Streaks() {
   const longestStreak = getLongestStreak(doneDates)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <header>
-        <h1 className="text-2xl font-semibold text-white">Streaks</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-[28px] font-bold tracking-tight text-white">Streaks</h1>
+        <p className="mt-1.5 text-sm text-zinc-500">
           {loading
             ? 'Lade Daten…'
             : habit.source === 'oura'
@@ -68,11 +68,12 @@ export default function Streaks() {
           <button
             key={h.key}
             onClick={() => setActiveHabit(h.key)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            className="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors"
+            style={
               activeHabit === h.key
-                ? 'bg-[var(--color-accent)] text-white'
-                : 'bg-[var(--color-surface)] text-zinc-400 hover:text-white'
-            }`}
+                ? { background: 'var(--color-accent)', color: 'white' }
+                : { background: 'var(--glass-track)', color: 'inherit', opacity: 0.75 }
+            }
           >
             {h.label}
           </button>
@@ -80,22 +81,20 @@ export default function Streaks() {
       </div>
 
       {error && (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">{error}</p>
       )}
 
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <div className="mb-4 flex gap-6 text-sm">
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="mb-5 flex gap-8 text-sm">
           <div>
             <p className="text-xs text-zinc-500">Aktuelle Streak</p>
-            <p className="font-semibold text-white">
+            <p className="mt-1 text-2xl font-bold text-white">
               {currentStreak} {currentStreak === 1 ? 'Tag' : 'Tage'}
             </p>
           </div>
           <div>
             <p className="text-xs text-zinc-500">Längste Streak</p>
-            <p className="font-semibold text-white">
+            <p className="mt-1 text-2xl font-bold text-white">
               {longestStreak} {longestStreak === 1 ? 'Tag' : 'Tage'}
             </p>
           </div>

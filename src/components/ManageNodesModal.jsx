@@ -8,9 +8,8 @@ const STAT_OPTIONS = [
 ]
 
 const inputClass =
-  'rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none'
-const selectClass =
-  'rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-white focus:border-[var(--color-accent)] focus:outline-none'
+  'rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-accent)] focus:outline-none'
+const selectClass = 'rounded-xl border border-white/10 bg-[var(--color-surface)] px-3 py-2 text-sm text-white focus:border-[var(--color-accent)] focus:outline-none'
 
 export default function ManageNodesModal({ open, nodes, completedIds, onClose, onAddNode, onDeleteNode }) {
   const [title, setTitle] = useState('')
@@ -32,13 +31,7 @@ export default function ManageNodesModal({ open, nodes, completedIds, onClose, o
     setSaving(true)
     setFormError(null)
     try {
-      await onAddNode({
-        title: title.trim(),
-        branch,
-        statKey,
-        bonusXp: Number(bonusXp) || 0,
-        requires: requires || null,
-      })
+      await onAddNode({ title: title.trim(), branch, statKey, bonusXp: Number(bonusXp) || 0, requires: requires || null })
       setTitle('')
       setRequires('')
     } catch (err) {
@@ -63,37 +56,37 @@ export default function ManageNodesModal({ open, nodes, completedIds, onClose, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+        className="glass-panel-strong max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-white">Knoten verwalten</h2>
+          <h2 className="text-sm font-semibold text-white">Knoten verwalten</h2>
           <button type="button" onClick={onClose} className="text-zinc-500 hover:text-white">
             ✕
           </button>
         </div>
 
         {formError && (
-          <p className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+          <p className="mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
             {formError}
           </p>
         )}
 
         <div className="flex flex-col gap-4">
-          {skillTreeBranches.map((b) => (
-            <div key={b.key}>
-              <p className="mb-2 text-xs font-medium text-zinc-400">{b.label}</p>
-              <div className="flex flex-col gap-1.5">
-                {nodes
-                  .filter((n) => n.branch === b.key)
-                  .map((node) => {
+          {skillTreeBranches.map((b) => {
+            const branchNodesFor = nodes.filter((n) => n.branch === b.key)
+            return (
+              <div key={b.key}>
+                <p className="mb-2 text-xs font-semibold text-zinc-400">{b.label}</p>
+                <div className="flex flex-col gap-1.5">
+                  {branchNodesFor.map((node) => {
                     const isCompleted = completedIds.has(node.id)
                     const hasDependents = nodes.some((n) => n.requires === node.id)
                     const blocked = isCompleted || hasDependents
                     return (
                       <div
                         key={node.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                        className="flex items-center justify-between gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm"
                       >
                         <span className="truncate text-zinc-300">{node.title}</span>
                         <button
@@ -114,24 +107,16 @@ export default function ManageNodesModal({ open, nodes, completedIds, onClose, o
                       </div>
                     )
                   })}
-                {branchNodesFor(nodes, b.key).length === 0 && (
-                  <p className="text-xs text-zinc-600">Noch keine Knoten.</p>
-                )}
+                  {branchNodesFor.length === 0 && <p className="text-xs text-zinc-600">Noch keine Knoten.</p>}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3 border-t border-[var(--color-border)] pt-4">
-          <p className="text-xs font-medium text-zinc-400">Neuer Knoten</p>
-          <input
-            type="text"
-            required
-            placeholder="Titel"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className={inputClass}
-          />
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4">
+          <p className="text-xs font-semibold text-zinc-400">Neuer Knoten</p>
+          <input type="text" required placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
 
           <div className="grid grid-cols-2 gap-3">
             <select
@@ -186,7 +171,8 @@ export default function ManageNodesModal({ open, nodes, completedIds, onClose, o
           <button
             type="submit"
             disabled={saving}
-            className="self-start rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
+            className="self-start rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+            style={{ background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))' }}
           >
             {saving ? 'Speichert…' : '+ Knoten hinzufügen'}
           </button>
@@ -194,8 +180,4 @@ export default function ManageNodesModal({ open, nodes, completedIds, onClose, o
       </div>
     </div>
   )
-}
-
-function branchNodesFor(nodes, branchKey) {
-  return nodes.filter((n) => n.branch === branchKey)
 }

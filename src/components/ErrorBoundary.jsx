@@ -25,7 +25,8 @@ export default class ErrorBoundary extends Component {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-1 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-soft)]"
+            className="mt-1 rounded-xl px-3 py-2 text-sm font-semibold text-white transition-colors"
+            style={{ background: 'linear-gradient(140deg, var(--color-accent), var(--color-accent-soft))' }}
           >
             Neu laden
           </button>
